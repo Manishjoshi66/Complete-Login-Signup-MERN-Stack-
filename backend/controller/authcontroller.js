@@ -12,6 +12,7 @@ const signup  = async(req,res)=>{
 
     }
     const Usermodel  = new usermodel({name,email,password});
+   //  const salt = await.bcrypt.getSalt(10);
     Usermodel.password = await bcrypt.hash(password,10);
     await Usermodel.save();
     res.status(201).json({message : 'signup successfully',success:true,
@@ -54,4 +55,53 @@ const login  = async(req,res)=>{
     res.status(500).json({message : 'internal server error ',succecss:false})
    }
 }
-module.exports = {signup,login} 
+// const getAllUsers = async (req, res) => {
+//   try {
+//     const users = await usermodel.find({}, '-password'); // exclude passwords
+//     res.status(200).json({ 
+//       success: true,
+//       message: "Users fetched successfully",
+//       users 
+//     });
+//   } catch (err) {
+//     res.status(500).json({ 
+//       success: false,
+//       message: "Internal server error" 
+//     });
+//   }
+// };
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await usermodel.find({});
+
+    const usersWithTokens = users.map(user => {
+      const token = jwt.sign(
+        { email: user.email, _id: user._id },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      return {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        token
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Users fetched successfully",
+      users: usersWithTokens
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+
+
+module.exports = {signup,login,getAllUsers} 
